@@ -4,6 +4,7 @@ It used the binary representation of the integers to sort
 them.
 https://en.wikipedia.org/wiki/Radix_sort
 """
+
 from __future__ import annotations
 
 
@@ -23,7 +24,7 @@ def msd_radix_sort(list_of_ints: list[int]) -> list[int]:
     [1, 45, 1209, 540402, 834598]
     >>> msd_radix_sort([-1, 34, 45])
     Traceback (most recent call last):
-    ...
+        ...
     ValueError: All numbers must be positive
     """
     if not list_of_ints:
@@ -52,8 +53,8 @@ def _msd_radix_sort(list_of_ints: list[int], bit_position: int) -> list[int]:
     if bit_position == 0 or len(list_of_ints) in [0, 1]:
         return list_of_ints
 
-    zeros = list()
-    ones = list()
+    zeros = []
+    ones = []
     # Split numbers based on bit at bit_position from the right
     for number in list_of_ints:
         if (number >> (bit_position - 1)) & 1:
@@ -74,7 +75,7 @@ def _msd_radix_sort(list_of_ints: list[int], bit_position: int) -> list[int]:
     return res
 
 
-def msd_radix_sort_inplace(list_of_ints: list[int]):
+def msd_radix_sort_inplace(list_of_ints: list[int]) -> None:
     """
     Inplace implementation of the MSD radix sort algorithm.
     Sorts based on the binary representation of the integers.
@@ -93,7 +94,7 @@ def msd_radix_sort_inplace(list_of_ints: list[int]):
     >>> lst = [-1, 34, 23, 4, -42]
     >>> msd_radix_sort_inplace(lst)
     Traceback (most recent call last):
-    ...
+        ...
     ValueError: All numbers must be positive
     """
 
@@ -110,7 +111,7 @@ def msd_radix_sort_inplace(list_of_ints: list[int]):
 
 def _msd_radix_sort_inplace(
     list_of_ints: list[int], bit_position: int, begin_index: int, end_index: int
-):
+) -> None:
     """
     Sort the given list based on the bit at bit_position. Numbers with a
     0 at that position will be at the start of the list, numbers with a
@@ -133,7 +134,7 @@ def _msd_radix_sort_inplace(
     j = end_index - 1
     while i <= j:
         changed = False
-        if not ((list_of_ints[i] >> bit_position) & 1):
+        if not (list_of_ints[i] >> bit_position) & 1:
             # found zero at the beginning
             i += 1
             changed = True
@@ -147,7 +148,7 @@ def _msd_radix_sort_inplace(
 
         list_of_ints[i], list_of_ints[j] = list_of_ints[j], list_of_ints[i]
         j -= 1
-        if not j == i:
+        if j != i:
             i += 1
 
     _msd_radix_sort_inplace(list_of_ints, bit_position, begin_index, i)

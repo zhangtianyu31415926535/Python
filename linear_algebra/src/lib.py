@@ -18,11 +18,13 @@ Overview:
 - function square_zero_matrix(N)
 - function random_matrix(W, H, a, b)
 """
+
 from __future__ import annotations
 
 import math
 import random
-from typing import Collection, overload
+from collections.abc import Collection
+from typing import overload
 
 
 class Vector:
@@ -39,13 +41,11 @@ class Vector:
         __sub__(other: Vector): vector subtraction
         __mul__(other: float): scalar multiplication
         __mul__(other: Vector): dot product
-        set(components: Collection[float]): changes the vector components
         copy(): copies this vector and returns it
         component(i): gets the i-th component (0-indexed)
         change_component(pos: int, value: float): changes specified component
         euclidean_length(): returns the euclidean length of the vector
         angle(other: Vector, deg: bool): returns the angle between two vectors
-        TODO: compare-operator
     """
 
     def __init__(self, components: Collection[float] | None = None) -> None:
@@ -95,39 +95,37 @@ class Vector:
         else:  # error case
             raise Exception("must have the same size")
 
-    @overload
-    def __mul__(self, other: float) -> Vector:
-        ...
+    def __eq__(self, other: object) -> bool:
+        """
+        performs the comparison between two vectors
+        """
+        if not isinstance(other, Vector):
+            return NotImplemented
+        if len(self) != len(other):
+            return False
+        return all(self.component(i) == other.component(i) for i in range(len(self)))
 
     @overload
-    def __mul__(self, other: Vector) -> float:
-        ...
+    def __mul__(self, other: float) -> Vector: ...
+
+    @overload
+    def __mul__(self, other: Vector) -> float: ...
 
     def __mul__(self, other: float | Vector) -> float | Vector:
         """
         mul implements the scalar multiplication
         and the dot-product
         """
-        if isinstance(other, float) or isinstance(other, int):
-            ans = [c * other for c in self.__components]
-            return Vector(ans)
-        elif isinstance(other, Vector) and len(self) == len(other):
-            size = len(self)
-            prods = [self.__components[i] * other.component(i) for i in range(size)]
-            return sum(prods)
-        else:  # error case
-            raise Exception("invalid operand!")
-
-    def set(self, components: Collection[float]) -> None:
-        """
-        input: new components
-        changes the components of the vector.
-        replaces the components with newer one.
-        """
-        if len(components) > 0:
-            self.__components = list(components)
-        else:
-            raise Exception("please give any vector")
+        match other:
+            case float() | int():
+                ans = [c * other for c in self.__components]
+                return Vector(ans)
+            case Vector() if len(self) == len(other):
+                size = len(self)
+                prods = [self.__components[i] * other.component(i) for i in range(size)]
+                return sum(prods)
+            case _:  # error case
+                raise Exception("invalid operand!")
 
     def copy(self) -> Vector:
         """
@@ -140,7 +138,7 @@ class Vector:
         input: index (0-indexed)
         output: the i-th component of the vector.
         """
-        if type(i) is int and -len(self.__components) <= i < len(self.__components):
+        if isinstance(i, int) and -len(self.__components) <= i < len(self.__components):
             return self.__components[i]
         else:
             raise Exception("index out of range")
@@ -167,12 +165,12 @@ class Vector:
         9.539392014169456
         >>> Vector([]).euclidean_length()
         Traceback (most recent call last):
-        ...
+            ...
         Exception: Vector is empty
         """
         if len(self.__components) == 0:
             raise Exception("Vector is empty")
-        squares = [c ** 2 for c in self.__components]
+        squares = [c**2 for c in self.__components]
         return math.sqrt(sum(squares))
 
     def angle(self, other: Vector, deg: bool = False) -> float:
@@ -185,7 +183,7 @@ class Vector:
         85.40775111366095
         >>> Vector([3, 4, -1]).angle(Vector([2, -1]))
         Traceback (most recent call last):
-        ...
+            ...
         Exception: invalid operand!
         """
         num = self * other
@@ -211,7 +209,8 @@ def unit_basis_vector(dimension: int, pos: int) -> Vector:
     at index 'pos' (indexing at 0)
     """
     # precondition
-    assert isinstance(dimension, int) and (isinstance(pos, int))
+    assert isinstance(dimension, int)
+    assert isinstance(pos, int)
     ans = [0] * dimension
     ans[pos] = 1
     return Vector(ans)
@@ -224,11 +223,9 @@ def axpy(scalar: float, x: Vector, y: Vector) -> Vector:
     computes the axpy operation
     """
     # precondition
-    assert (
-        isinstance(x, Vector)
-        and isinstance(y, Vector)
-        and (isinstance(scalar, int) or isinstance(scalar, float))
-    )
+    assert isinstance(x, Vector)
+    assert isinstance(y, Vector)
+    assert isinstance(scalar, (int, float))
     return x * scalar + y
 
 
@@ -321,39 +318,39 @@ class Matrix:
             raise Exception("matrices must have the same dimension!")
 
     @overload
-    def __mul__(self, other: float) -> Matrix:
-        ...
+    def __mul__(self, other: float) -> Matrix: ...
 
     @overload
-    def __mul__(self, other: Vector) -> Vector:
-        ...
+    def __mul__(self, other: Vector) -> Vector: ...
 
     def __mul__(self, other: float | Vector) -> Vector | Matrix:
         """
         implements the matrix-vector multiplication.
         implements the matrix-scalar multiplication
         """
-        if isinstance(other, Vector):  # matrix-vector
-            if len(other) == self.__width:
-                ans = zero_vector(self.__height)
-                for i in range(self.__height):
-                    prods = [
-                        self.__matrix[i][j] * other.component(j)
-                        for j in range(self.__width)
-                    ]
-                    ans.change_component(i, sum(prods))
-                return ans
-            else:
-                raise Exception(
-                    "vector must have the same size as the "
-                    "number of columns of the matrix!"
-                )
-        elif isinstance(other, int) or isinstance(other, float):  # matrix-scalar
-            matrix = [
-                [self.__matrix[i][j] * other for j in range(self.__width)]
-                for i in range(self.__height)
-            ]
-            return Matrix(matrix, self.__width, self.__height)
+        match other:
+            case Vector():  # matrix-vector
+                if len(other) == self.__width:
+                    ans = zero_vector(self.__height)
+                    for i in range(self.__height):
+                        prods = [
+                            self.__matrix[i][j] * other.component(j)
+                            for j in range(self.__width)
+                        ]
+                        ans.change_component(i, sum(prods))
+                    return ans
+                else:
+                    raise Exception(
+                        "vector must have the same size as the "
+                        "number of columns of the matrix!"
+                    )
+            case int() | float():  # matrix-scalar
+                matrix = [
+                    [self.__matrix[i][j] * other for j in range(self.__width)]
+                    for i in range(self.__height)
+                ]
+                return Matrix(matrix, self.__width, self.__height)
+        return None
 
     def height(self) -> int:
         """
@@ -415,18 +412,20 @@ class Matrix:
             raise Exception("Matrix is not square")
         if self.__height < 1:
             raise Exception("Matrix has no element")
-        elif self.__height == 1:
-            return self.__matrix[0][0]
-        elif self.__height == 2:
-            return (
-                self.__matrix[0][0] * self.__matrix[1][1]
-                - self.__matrix[0][1] * self.__matrix[1][0]
-            )
-        else:
-            cofactor_prods = [
-                self.__matrix[0][y] * self.cofactor(0, y) for y in range(self.__width)
-            ]
-            return sum(cofactor_prods)
+        match self.__height:
+            case 1:
+                return self.__matrix[0][0]
+            case 2:
+                return (
+                    self.__matrix[0][0] * self.__matrix[1][1]
+                    - self.__matrix[0][1] * self.__matrix[1][0]
+                )
+            case _:
+                cofactor_prods = [
+                    self.__matrix[0][y] * self.cofactor(0, y)
+                    for y in range(self.__width)
+                ]
+                return sum(cofactor_prods)
 
 
 def square_zero_matrix(n: int) -> Matrix:

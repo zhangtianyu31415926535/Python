@@ -12,9 +12,10 @@ There are other several other algorithms for the convex hull problem
 which have not been implemented here, yet.
 
 """
+
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 
 class Point:
@@ -44,43 +45,43 @@ class Point:
     ValueError: could not convert string to float: 'pi'
     """
 
-    def __init__(self, x, y):
+    def __init__(self, x, y) -> None:
         self.x, self.y = float(x), float(y)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.x == other.x and self.y == other.y
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not self == other
 
-    def __gt__(self, other):
+    def __gt__(self, other) -> bool:
         if self.x > other.x:
             return True
         elif self.x == other.x:
             return self.y > other.y
         return False
 
-    def __lt__(self, other):
+    def __lt__(self, other) -> bool:
         return not self > other
 
-    def __ge__(self, other):
+    def __ge__(self, other) -> bool:
         if self.x > other.x:
             return True
         elif self.x == other.x:
             return self.y >= other.y
         return False
 
-    def __le__(self, other):
+    def __le__(self, other) -> bool:
         if self.x < other.x:
             return True
         elif self.x == other.x:
             return self.y <= other.y
         return False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"({self.x}, {self.y})"
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.x)
 
 
@@ -123,7 +124,7 @@ def _construct_points(
             else:
                 try:
                     points.append(Point(p[0], p[1]))
-                except (IndexError, TypeError):
+                except IndexError, TypeError:
                     print(
                         f"Ignoring deformed point {p}. All points"
                         " must have at least 2 coordinates."
@@ -174,12 +175,12 @@ def _validate_input(points: list[Point] | list[list[float]]) -> list[Point]:
     """
 
     if not hasattr(points, "__iter__"):
-        raise ValueError(
-            f"Expecting an iterable object but got an non-iterable type {points}"
-        )
+        msg = f"Expecting an iterable object but got an non-iterable type {points}"
+        raise ValueError(msg)
 
     if not points:
-        raise ValueError(f"Expecting a list of points but got {points}")
+        msg = f"Expecting a list of points but got {points}"
+        raise ValueError(msg)
 
     return _construct_points(points)
 
@@ -266,21 +267,20 @@ def convex_hull_bf(points: list[Point]) -> list[Point]:
             points_left_of_ij = points_right_of_ij = False
             ij_part_of_convex_hull = True
             for k in range(n):
-                if k != i and k != j:
+                if k not in {i, j}:
                     det_k = _det(points[i], points[j], points[k])
 
                     if det_k > 0:
                         points_left_of_ij = True
                     elif det_k < 0:
                         points_right_of_ij = True
-                    else:
-                        # point[i], point[j], point[k] all lie on a straight line
-                        # if point[k] is to the left of point[i] or it's to the
-                        # right of point[j], then point[i], point[j] cannot be
-                        # part of the convex hull of A
-                        if points[k] < points[i] or points[k] > points[j]:
-                            ij_part_of_convex_hull = False
-                            break
+                    # point[i], point[j], point[k] all lie on a straight line
+                    # if point[k] is to the left of point[i] or it's to the
+                    # right of point[j], then point[i], point[j] cannot be
+                    # part of the convex hull of A
+                    elif points[k] < points[i] or points[k] > points[j]:
+                        ij_part_of_convex_hull = False
+                        break
 
                 if points_left_of_ij and points_right_of_ij:
                     ij_part_of_convex_hull = False
@@ -451,23 +451,22 @@ def convex_hull_melkman(points: list[Point]) -> list[Point]:
         if det > 0:
             convex_hull.insert(0, points[i])
             break
-        elif det < 0:
+        if det < 0:
             convex_hull.append(points[i])
             break
-        else:
-            convex_hull[1] = points[i]
+        convex_hull[1] = points[i]
     i += 1
 
-    for i in range(i, n):
+    for j in range(i, n):
         if (
-            _det(convex_hull[0], convex_hull[-1], points[i]) > 0
+            _det(convex_hull[0], convex_hull[-1], points[j]) > 0
             and _det(convex_hull[-1], convex_hull[0], points[1]) < 0
         ):
             # The point lies within the convex hull
             continue
 
-        convex_hull.insert(0, points[i])
-        convex_hull.append(points[i])
+        convex_hull.insert(0, points[j])
+        convex_hull.append(points[j])
         while _det(convex_hull[0], convex_hull[1], convex_hull[2]) >= 0:
             del convex_hull[1]
         while _det(convex_hull[-1], convex_hull[-2], convex_hull[-3]) <= 0:
@@ -477,7 +476,7 @@ def convex_hull_melkman(points: list[Point]) -> list[Point]:
     return sorted(convex_hull[1:] if len(convex_hull) > 3 else convex_hull)
 
 
-def main():
+def main() -> None:
     points = [
         (0, 3),
         (2, 2),

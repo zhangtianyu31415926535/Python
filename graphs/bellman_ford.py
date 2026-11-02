@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-def print_distance(distance: list[float], src):
+def print_distance(distance: list[float], src) -> None:
     print(f"Vertex\tShortest Distance from vertex {src}")
     for i, d in enumerate(distance):
         print(f"{i}\t\t{d}")
@@ -9,7 +9,7 @@ def print_distance(distance: list[float], src):
 
 def check_negative_cycle(
     graph: list[dict[str, int]], distance: list[float], edge_count: int
-):
+) -> bool:
     for j in range(edge_count):
         u, v, w = (graph[j][k] for k in ["src", "dst", "weight"])
         if distance[u] != float("inf") and distance[u] + w < distance[v]:
@@ -36,7 +36,7 @@ def bellman_ford(
     distance = [float("inf")] * vertex_count
     distance[src] = 0.0
 
-    for i in range(vertex_count - 1):
+    for _ in range(vertex_count - 1):
         for j in range(edge_count):
             u, v, w = (graph[j][k] for k in ["src", "dst", "weight"])
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     V = int(input("Enter number of vertices: ").strip())
     E = int(input("Enter number of edges: ").strip())
 
-    graph: list[dict[str, int]] = [dict() for j in range(E)]
+    graph: list[dict[str, int]] = [{} for _ in range(E)]
 
     for i in range(E):
         print("Edge ", i + 1)

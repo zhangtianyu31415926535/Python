@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Callable, Generic, TypeVar
+from collections.abc import Callable
+from typing import TypeVar
 
 T = TypeVar("T")
 U = TypeVar("U")
 
 
-class DoubleLinkedListNode(Generic[T, U]):
+class DoubleLinkedListNode[T, U]:
     """
     Double Linked List Node built specifically for LFU Cache
 
@@ -15,7 +16,7 @@ class DoubleLinkedListNode(Generic[T, U]):
     Node: key: 1, val: 1, freq: 0, has next: False, has prev: False
     """
 
-    def __init__(self, key: T | None, val: U | None):
+    def __init__(self, key: T | None, val: U | None) -> None:
         self.key = key
         self.val = val
         self.freq: int = 0
@@ -23,12 +24,13 @@ class DoubleLinkedListNode(Generic[T, U]):
         self.prev: DoubleLinkedListNode[T, U] | None = None
 
     def __repr__(self) -> str:
-        return "Node: key: {}, val: {}, freq: {}, has next: {}, has prev: {}".format(
-            self.key, self.val, self.freq, self.next is not None, self.prev is not None
+        return (
+            f"Node: key: {self.key}, val: {self.val}, freq: {self.freq}, "
+            f"has next: {self.next is not None}, has prev: {self.prev is not None}"
         )
 
 
-class DoubleLinkedList(Generic[T, U]):
+class DoubleLinkedList[T, U]:
     """
     Double Linked List built specifically for LFU Cache
 
@@ -159,20 +161,20 @@ class DoubleLinkedList(Generic[T, U]):
         return node
 
 
-class LFUCache(Generic[T, U]):
+class LFUCache[T, U]:
     """
     LFU Cache to store a given capacity of data. Can be used as a stand-alone object
     or as a function decorator.
 
     >>> cache = LFUCache(2)
-    >>> cache.set(1, 1)
-    >>> cache.set(2, 2)
+    >>> cache.put(1, 1)
+    >>> cache.put(2, 2)
     >>> cache.get(1)
     1
-    >>> cache.set(3, 3)
+    >>> cache.put(3, 3)
     >>> cache.get(2) is None
     True
-    >>> cache.set(4, 4)
+    >>> cache.put(4, 4)
     >>> cache.get(1) is None
     True
     >>> cache.get(3)
@@ -194,10 +196,7 @@ class LFUCache(Generic[T, U]):
     CacheInfo(hits=196, misses=100, capacity=100, current_size=100)
     """
 
-    # class variable to map the decorator functions to their respective instance
-    decorator_function_to_instance_map: dict[Callable[[T], U], LFUCache[T, U]] = {}
-
-    def __init__(self, capacity: int):
+    def __init__(self, capacity: int) -> None:
         self.list: DoubleLinkedList[T, U] = DoubleLinkedList()
         self.capacity = capacity
         self.num_keys = 0
@@ -223,7 +222,7 @@ class LFUCache(Generic[T, U]):
         >>> 1 in cache
         False
 
-        >>> cache.set(1, 1)
+        >>> cache.put(1, 1)
         >>> 1 in cache
         True
         """
@@ -249,7 +248,7 @@ class LFUCache(Generic[T, U]):
         self.miss += 1
         return None
 
-    def set(self, key: T, value: U) -> None:
+    def put(self, key: T, value: U) -> None:
         """
         Sets the value for the input key and updates the Double Linked List
         """
@@ -289,20 +288,25 @@ class LFUCache(Generic[T, U]):
         """
 
         def cache_decorator_inner(func: Callable[[T], U]) -> Callable[..., U]:
-            def cache_decorator_wrapper(*args: T) -> U:
-                if func not in cls.decorator_function_to_instance_map:
-                    cls.decorator_function_to_instance_map[func] = LFUCache(size)
+            # variable to map the decorator functions to their respective instance
+            decorator_function_to_instance_map: dict[
+                Callable[[T], U], LFUCache[T, U]
+            ] = {}
 
-                result = cls.decorator_function_to_instance_map[func].get(args[0])
+            def cache_decorator_wrapper(*args: T) -> U:
+                if func not in decorator_function_to_instance_map:
+                    decorator_function_to_instance_map[func] = LFUCache(size)
+
+                result = decorator_function_to_instance_map[func].get(args[0])
                 if result is None:
                     result = func(*args)
-                    cls.decorator_function_to_instance_map[func].set(args[0], result)
+                    decorator_function_to_instance_map[func].put(args[0], result)
                 return result
 
             def cache_info() -> LFUCache[T, U]:
-                return cls.decorator_function_to_instance_map[func]
+                return decorator_function_to_instance_map[func]
 
-            setattr(cache_decorator_wrapper, "cache_info", cache_info)
+            setattr(cache_decorator_wrapper, "cache_info", cache_info)  # noqa: B010
 
             return cache_decorator_wrapper
 
